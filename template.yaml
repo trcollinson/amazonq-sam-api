@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: SAM REST API with a Hello World endpoint
+Description: SAM REST API with a Hello World endpoint and Cognito authentication
 
 Globals:
   Function:
@@ -8,7 +8,80 @@ Globals:
     MemorySize: 128
     Runtime: python3.11
 
+Parameters:
+  CognitoDomain:
+    Type: String
+    Default: api-auth-domain
+    Description: Domain prefix for Cognito hosted UI
+
 Resources:
+  # Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${AWS::StackName}-UserPool
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: true
+
+  # Standard User Group
+  StandardUserGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: standard-users
+      UserPoolId: !Ref UserPool
+      Description: Standard users with basic access
+
+  # Admin User Group
+  AdminUserGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: admin-users
+      UserPoolId: !Ref UserPool
+      Description: Admin users with elevated privileges
+
+  # User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub ${AWS::StackName}-app-client
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - profile
+      CallbackURLs:
+        - http://localhost:3000
+      LogoutURLs:
+        - http://localhost:3000
+      SupportedIdentityProviders:
+        - COGNITO
+
+  # User Pool Domain
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref CognitoDomain
+      UserPoolId: !Ref UserPool
+
+  # API Gateway with Cognito Authorizer
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
@@ -17,12 +90,22 @@ Resources:
         AllowMethods: "'*'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
-      
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+
+  # Hello World Lambda Function with Cognito Authorization
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/
       Handler: hello_world.lambda_handler
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+          CLIENT_ID: !Ref UserPoolClient
       Events:
         HelloWorld:
           Type: Api
@@ -30,6 +113,8 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /hello
             Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
 
 Outputs:
   HelloWorldApi:
@@ -38,3 +123,12 @@ Outputs:
   HelloWorldFunction:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt HelloWorldFunction.Arn
+  UserPoolId:
+    Description: "Cognito User Pool ID"
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: "Cognito User Pool Client ID"
+    Value: !Ref UserPoolClient
+  CognitoHostedUI:
+    Description: "Cognito Hosted UI URL"
+    Value: !Sub "https://${CognitoDomain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&scope=email+openid+phone+profile&redirect_uri=http://localhost:3000"
