@@ -95,6 +95,7 @@ def list_users(cognito, user_pool_id):
 def get_user(cognito, user_pool_id, username):
     """Get information about a specific user"""
     try:
+        # Get user details
         response = cognito.admin_get_user(
             UserPoolId=user_pool_id,
             Username=username
@@ -105,12 +106,27 @@ def get_user(cognito, user_pool_id, username):
             'enabled': response.get('Enabled', False),
             'status': response.get('UserStatus'),
             'created': response.get('UserCreateDate').isoformat() if response.get('UserCreateDate') else None,
-            'attributes': {}
+            'attributes': {},
+            'groups': []
         }
         
         # Extract user attributes
         for attr in response.get('UserAttributes', []):
             user_data['attributes'][attr.get('Name')] = attr.get('Value')
+            
+        # Get user groups
+        groups_response = cognito.admin_list_groups_for_user(
+            Username=username,
+            UserPoolId=user_pool_id
+        )
+        
+        # Add groups to user data
+        for group in groups_response.get('Groups', []):
+            user_data['groups'].append({
+                'name': group.get('GroupName'),
+                'description': group.get('Description'),
+                'precedence': group.get('Precedence')
+            })
         
         return {
             "statusCode": 200,

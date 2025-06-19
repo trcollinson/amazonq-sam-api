@@ -2,6 +2,8 @@ import json
 import unittest
 import sys
 import os
+import boto3
+from botocore.exceptions import ClientError
 from unittest.mock import patch, MagicMock
 
 # Add src directory to path so we can import the Lambda function
@@ -23,7 +25,7 @@ class TestUsers(unittest.TestCase):
                     'Username': 'user1',
                     'Enabled': True,
                     'UserStatus': 'CONFIRMED',
-                    'UserCreateDate': '2023-01-01 12:00:00',
+                    'UserCreateDate': MagicMock(isoformat=lambda: '2023-01-01T12:00:00Z'),
                     'Attributes': [
                         {'Name': 'email', 'Value': 'user1@example.com'},
                         {'Name': 'custom:role', 'Value': 'standard'}
@@ -33,7 +35,7 @@ class TestUsers(unittest.TestCase):
                     'Username': 'user2',
                     'Enabled': True,
                     'UserStatus': 'CONFIRMED',
-                    'UserCreateDate': '2023-01-02 12:00:00',
+                    'UserCreateDate': MagicMock(isoformat=lambda: '2023-01-02T12:00:00Z'),
                     'Attributes': [
                         {'Name': 'email', 'Value': 'user2@example.com'},
                         {'Name': 'custom:role', 'Value': 'admin'}
@@ -90,10 +92,21 @@ class TestUsers(unittest.TestCase):
             'Username': 'user1',
             'Enabled': True,
             'UserStatus': 'CONFIRMED',
-            'UserCreateDate': '2023-01-01 12:00:00',
+            'UserCreateDate': MagicMock(isoformat=lambda: '2023-01-01T12:00:00Z'),
             'UserAttributes': [
                 {'Name': 'email', 'Value': 'user1@example.com'},
                 {'Name': 'custom:role', 'Value': 'standard'}
+            ]
+        }
+        
+        # Mock the admin_list_groups_for_user response
+        mock_cognito.admin_list_groups_for_user.return_value = {
+            'Groups': [
+                {
+                    'GroupName': 'standard-users',
+                    'Description': 'Standard users with basic access',
+                    'Precedence': 10
+                }
             ]
         }
         
@@ -130,8 +143,17 @@ class TestUsers(unittest.TestCase):
         self.assertEqual(body['user']['username'], 'user1')
         self.assertEqual(body['user']['attributes']['email'], 'user1@example.com')
         
-        # Verify the mock was called with the correct arguments
+        # Check groups
+        self.assertIn('groups', body['user'])
+        self.assertEqual(len(body['user']['groups']), 1)
+        self.assertEqual(body['user']['groups'][0]['name'], 'standard-users')
+        
+        # Verify the mocks were called with the correct arguments
         mock_cognito.admin_get_user.assert_called_once_with(
+            UserPoolId='us-east-1_example',
+            Username='user1'
+        )
+        mock_cognito.admin_list_groups_for_user.assert_called_once_with(
             UserPoolId='us-east-1_example',
             Username='user1'
         )
@@ -142,14 +164,16 @@ class TestUsers(unittest.TestCase):
         mock_cognito = MagicMock()
         mock_boto_client.return_value = mock_cognito
         
-        # Mock the admin_get_user to raise UserNotFoundException
+        # Create a proper ClientError exception
         error_response = {
             'Error': {
                 'Code': 'UserNotFoundException',
                 'Message': 'User does not exist'
             }
         }
-        mock_cognito.admin_get_user.side_effect = boto3.client('cognito-idp').exceptions.UserNotFoundException(
+        
+        # Use the actual ClientError exception
+        mock_cognito.admin_get_user.side_effect = ClientError(
             error_response=error_response,
             operation_name='AdminGetUser'
         )

@@ -133,6 +133,7 @@ Resources:
               Action:
                 - cognito-idp:ListUsers
                 - cognito-idp:AdminGetUser
+                - cognito-idp:AdminListGroupsForUser
               Resource: !GetAtt UserPool.Arn
       Events:
         ListUsers:

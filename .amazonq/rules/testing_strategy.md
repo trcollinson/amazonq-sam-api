@@ -74,9 +74,68 @@ def test_lambda_handler_no_auth(self):
        # ...
    ```
 
+5. **Mock complex objects with expected methods**:
+   When mocking responses that contain objects with methods that your code calls, use MagicMock with appropriate method implementations:
+   ```python
+   # Instead of using a string for a date that needs isoformat() called on it:
+   'UserCreateDate': '2023-01-01 12:00:00',  # WRONG - will cause AttributeError
+   
+   # Use a MagicMock with the expected method:
+   'UserCreateDate': MagicMock(isoformat=lambda: '2023-01-01T12:00:00Z'),  # CORRECT
+   ```
+
 ## Test Coverage Guidelines
 
 1. Aim for high test coverage of Lambda handler functions.
 2. Test both success and error paths.
 3. Test with different types of input events.
 4. Verify all response fields that matter for the API contract.
+
+## Common Testing Pitfalls
+
+1. **Missing imports in test files**: Always ensure all necessary modules are imported in test files, especially when mocking external services.
+
+2. **Type mismatches in mock responses**: Ensure mock responses match the expected types that the function will process. Pay special attention to:
+   - Date objects that need methods like `isoformat()`
+   - Nested structures that might be accessed with dot notation
+   - Objects with methods that are called in the code being tested
+
+3. **Incomplete mock configuration**: When mocking AWS services, ensure all methods used by your code are properly configured on the mock object.
+
+4. **Mocking AWS exceptions correctly**: When mocking AWS service exceptions, use the actual exception classes from botocore:
+   ```python
+   # WRONG - MagicMock is not an exception class:
+   mock_exception = MagicMock()
+   mock_exception.response = {'Error': {'Code': 'ErrorCode'}}
+   mock_client.method.side_effect = mock_exception  # TypeError: catching classes that do not inherit from BaseException is not allowed
+   
+   # WRONG - Custom exception without proper structure:
+   class MockClientError(Exception):
+       pass
+   error = MockClientError()
+   error.response = {'Error': {'Code': 'ErrorCode'}}
+   mock_client.method.side_effect = error  # May work for simple cases but doesn't fully mimic AWS exceptions
+   
+   # CORRECT - Import and use the actual ClientError exception:
+   from botocore.exceptions import ClientError
+   
+   error_response = {'Error': {'Code': 'UserNotFoundException', 'Message': 'User does not exist'}}
+   mock_client.method.side_effect = ClientError(error_response=error_response, operation_name='OperationName')
+   ```
+
+5. **JSON serialization issues**: When mocking objects that will be serialized to JSON, ensure they are JSON-serializable:
+   ```python
+   # WRONG - MagicMock objects are not JSON serializable:
+   response = {
+       'data': MagicMock(),  # Will cause TypeError: Object of type MagicMock is not JSON serializable
+   }
+   
+   # CORRECT - Use simple Python types that are JSON serializable:
+   response = {
+       'data': {
+           'id': '123',
+           'name': 'test',
+           'attributes': ['a', 'b', 'c']
+       }
+   }
+   ```
