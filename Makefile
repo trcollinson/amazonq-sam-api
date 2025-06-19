@@ -14,7 +14,7 @@ dev-setup:
 
 setup:
 	pip install -r requirements-dev.txt
-	pip install -r src/requirements.txt
+	find src -name requirements.txt -exec pip install -r {} \;
 
 open-cov:
 	@if [ "$(shell uname)" = "Darwin" ]; then \

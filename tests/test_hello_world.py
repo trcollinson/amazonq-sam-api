@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 # Add src directory to path so we can import the Lambda function
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from hello_world import lambda_handler
+from hello_world.app import lambda_handler
 
 class TestHelloWorld(unittest.TestCase):
     def test_lambda_handler_no_auth(self):

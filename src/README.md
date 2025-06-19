@@ -4,24 +4,22 @@
 Contains all Lambda function handlers and supporting code for the SAM REST API.
 
 ## Contents
-- `hello_world.py`: Handles the /hello endpoint requests, returning a greeting to authenticated users
-- `users.py`: Handles the /users endpoints for listing users and getting user details
-- `requirements.txt`: Python dependencies required by the Lambda functions
+- `hello_world/`: Lambda function for the /hello endpoint
+- `users/`: Lambda function for user operations (/users endpoints)
+- `shared/`: Common code that can be used across multiple Lambda functions
 
-## Usage
-The Lambda handlers follow the standard AWS Lambda handler pattern with API Gateway integration:
-
-```python
-def lambda_handler(event, context):
-    # Process the API Gateway event
-    # Extract user information from Cognito claims if available
-    return {
-        "statusCode": 200,
-        "headers": {...},
-        "body": json.dumps({...})
-    }
+## Directory Structure
+Each Lambda function follows this structure:
+```
+function_name/
+├── __init__.py       # Makes the directory a Python package
+├── app.py            # Contains the lambda_handler function
+├── requirements.txt  # Function-specific dependencies
+└── README.md         # Documentation for the function
 ```
 
-## Dependencies
-- boto3: AWS SDK for Python, used to interact with Cognito User Pool
-- botocore: Core functionality of boto3
+## Benefits of This Structure
+- **Better organization**: Each Lambda function has its own dedicated directory
+- **Cleaner dependencies**: Each function can have its own requirements.txt
+- **Easier deployment**: SAM can package each function independently
+- **Improved maintainability**: Clearer separation of concerns

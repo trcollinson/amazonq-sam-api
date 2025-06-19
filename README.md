@@ -7,9 +7,13 @@ A serverless REST API built with AWS SAM and secured with Amazon Cognito authent
 ```
 .
 ├── src/                    # Lambda function code
-│   ├── hello_world.py      # Hello World endpoint handler
-│   ├── users.py            # Users endpoints handler
-│   └── requirements.txt    # Python dependencies
+│   ├── hello_world/         # Hello World Lambda function
+│   │   ├── app.py           # Lambda handler
+│   │   └── requirements.txt  # Function dependencies
+│   ├── users/              # Users Lambda function
+│   │   ├── app.py           # Lambda handler
+│   │   └── requirements.txt  # Function dependencies
+│   └── shared/             # Shared code between functions
 ├── tests/                  # Unit tests
 │   ├── test_hello_world.py # Tests for hello_world Lambda
 │   └── test_users.py       # Tests for users Lambda
@@ -85,22 +89,29 @@ curl -H "Authorization: Bearer YOUR_ID_TOKEN" https://your-api-id.execute-api.re
 ## Adding New Endpoints
 
 To add a new endpoint:
-1. Create a new handler function in the `src/` directory
-2. Add the function to the `template.yaml` file with appropriate API event configuration
-3. Configure the authorization level (any authenticated user or admin only)
-4. Create unit tests in the `tests/` directory
-5. Deploy the updated application
+1. Create a new directory under `src/` for your Lambda function
+2. Add the following files to your function directory:
+   - `app.py` with your Lambda handler function
+   - `requirements.txt` with any dependencies
+   - `__init__.py` to make it a Python package
+   - `README.md` to document the function
+3. Add the function to the `template.yaml` file with appropriate API event configuration
+4. Configure the authorization level (any authenticated user or admin only)
+5. Create unit tests in the `tests/` directory
+6. Deploy the updated application
 
 ## Testing
 
 ### Setup
 
-Install all project dependencies (both development and Lambda function dependencies):
+Install all project dependencies (both development and all Lambda function dependencies):
 
 ```bash
 # Install all dependencies
 make setup
 ```
+
+This will install the development dependencies and scan all Lambda function directories for requirements.txt files.
 
 Or install only development dependencies:
 

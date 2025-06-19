@@ -9,10 +9,10 @@ from unittest.mock import patch, MagicMock
 # Add src directory to path so we can import the Lambda function
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from users import lambda_handler
+from users.app import lambda_handler
 
 class TestUsers(unittest.TestCase):
-    @patch('users.boto3.client')
+    @patch('users.app.boto3.client')
     def test_list_users_standard_user(self, mock_boto_client):
         # Set up mock Cognito client
         mock_cognito = MagicMock()
@@ -81,7 +81,7 @@ class TestUsers(unittest.TestCase):
             Limit=60
         )
     
-    @patch('users.boto3.client')
+    @patch('users.app.boto3.client')
     def test_get_user_standard_user(self, mock_boto_client):
         # Set up mock Cognito client
         mock_cognito = MagicMock()
@@ -158,7 +158,7 @@ class TestUsers(unittest.TestCase):
             Username='user1'
         )
     
-    @patch('users.boto3.client')
+    @patch('users.app.boto3.client')
     def test_get_user_not_found(self, mock_boto_client):
         # Set up mock Cognito client
         mock_cognito = MagicMock()
