@@ -8,9 +8,11 @@ A serverless REST API built with AWS SAM and secured with Amazon Cognito authent
 .
 ├── src/                    # Lambda function code
 │   ├── hello_world.py      # Hello World endpoint handler
+│   ├── users.py            # Users endpoints handler
 │   └── requirements.txt    # Python dependencies
 ├── tests/                  # Unit tests
-│   └── test_hello_world.py # Tests for hello_world Lambda
+│   ├── test_hello_world.py # Tests for hello_world Lambda
+│   └── test_users.py       # Tests for users Lambda
 ├── template.yaml           # SAM template with Cognito resources
 ├── pytest.ini             # Pytest configuration
 ├── requirements-dev.txt    # Development dependencies
@@ -33,7 +35,10 @@ sam build
 sam local start-api
 ```
 
-Then access the hello endpoint at: http://localhost:3000/hello
+Then access the endpoints at:
+- Hello World: http://localhost:3000/hello
+- List Users: http://localhost:3000/users
+- Get User: http://localhost:3000/users/{username}
 
 **Note:** When testing locally, the Cognito authentication will not be enforced. In the deployed environment, you will need to include a valid JWT token in the Authorization header.
 
@@ -67,7 +72,14 @@ After deployment, you'll need to:
 ### Making Authenticated Requests
 
 ```bash
+# Hello World endpoint
 curl -H "Authorization: Bearer YOUR_ID_TOKEN" https://your-api-id.execute-api.region.amazonaws.com/Prod/hello
+
+# List all users
+curl -H "Authorization: Bearer YOUR_ID_TOKEN" https://your-api-id.execute-api.region.amazonaws.com/Prod/users
+
+# Get specific user
+curl -H "Authorization: Bearer YOUR_ID_TOKEN" https://your-api-id.execute-api.region.amazonaws.com/Prod/users/username
 ```
 
 ## Adding New Endpoints
@@ -83,10 +95,17 @@ To add a new endpoint:
 
 ### Setup
 
-Install development dependencies:
+Install all project dependencies (both development and Lambda function dependencies):
 
 ```bash
-# Using make command
+# Install all dependencies
+make setup
+```
+
+Or install only development dependencies:
+
+```bash
+# Install only dev dependencies
 make dev-setup
 
 # Or manually

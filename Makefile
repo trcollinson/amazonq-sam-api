@@ -1,4 +1,4 @@
-.PHONY: test test-cov clean dev-setup open-cov
+.PHONY: test test-cov clean dev-setup open-cov setup
 
 test:
 	pytest
@@ -11,6 +11,10 @@ clean:
 
 dev-setup:
 	pip install -r requirements-dev.txt
+
+setup:
+	pip install -r requirements-dev.txt
+	pip install -r src/requirements.txt
 
 open-cov:
 	@if [ "$(shell uname)" = "Darwin" ]; then \

@@ -5,6 +5,7 @@ Contains all Lambda function handlers and supporting code for the SAM REST API.
 
 ## Contents
 - `hello_world.py`: Handles the /hello endpoint requests, returning a greeting to authenticated users
+- `users.py`: Handles the /users endpoints for listing users and getting user details
 - `requirements.txt`: Python dependencies required by the Lambda functions
 
 ## Usage
@@ -22,4 +23,5 @@ def lambda_handler(event, context):
 ```
 
 ## Dependencies
-- No external dependencies currently required beyond the AWS Lambda runtime
+- boto3: AWS SDK for Python, used to interact with Cognito User Pool
+- botocore: Core functionality of boto3

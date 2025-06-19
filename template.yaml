@@ -115,6 +115,42 @@ Resources:
             Method: get
             Auth:
               Authorizer: CognitoAuthorizer
+              
+  # Users Lambda Function with Cognito Authorization
+  UsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: users.lambda_handler
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+          CLIENT_ID: !Ref UserPoolClient
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+                - cognito-idp:AdminGetUser
+              Resource: !GetAtt UserPool.Arn
+      Events:
+        ListUsers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /users
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /users/{username}
+            Method: get
+            Auth:
+              Authorizer: CognitoAuthorizer
 
 Outputs:
   HelloWorldApi:
@@ -123,6 +159,12 @@ Outputs:
   HelloWorldFunction:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt HelloWorldFunction.Arn
+  UsersApi:
+    Description: "API Gateway endpoint URL for Prod stage for Users function"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/users/"
+  UsersFunction:
+    Description: "Users Lambda Function ARN"
+    Value: !GetAtt UsersFunction.Arn
   UserPoolId:
     Description: "Cognito User Pool ID"
     Value: !Ref UserPool

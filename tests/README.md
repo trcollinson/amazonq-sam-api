@@ -5,6 +5,7 @@ Contains unit tests for the Lambda functions and other components of the SAM RES
 
 ## Contents
 - `test_hello_world.py`: Tests for the hello_world Lambda handler, covering different authentication scenarios
+- `test_users.py`: Tests for the users Lambda handler, covering listing users and getting user details
 - `__init__.py`: Makes the tests directory a proper Python package
 
 ## Testing Approach
